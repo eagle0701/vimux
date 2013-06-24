@@ -57,8 +57,9 @@ function! s:VimuxSetBuffer(text)
   " FIXME for some reason, the 'tmux load-buffer -' form will hang
   " when used with 'system()' which takes a second argument as stdin.
   let tmpfile = tempname()
-  call writefile(split(a:text, '\n'), tmpfile, 'b')
-  call system('tmux load-buffer ' . shellescape(tmpfile))
+  " call writefile(split(a:text, '\n'), tmpfile, 'b')
+  call system("cat > " . tmpfile, a:text)
+  call system('tmux load-buffer ' . tmpfile)
   call delete(tmpfile)
 endfunction
 
