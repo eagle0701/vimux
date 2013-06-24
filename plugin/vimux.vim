@@ -42,7 +42,24 @@ function! VimuxRunCommand(command, ...)
 endfunction
 
 function! VimuxSendText(text)
-  call VimuxSendKeys('"'.escape(a:text, '"').'"')
+  " backup current tmux buffer
+  let oldbuffer = system("tmux save-buffer -")
+
+
+  call s:VimuxSetBuffer(a:text)
+  call system("tmux paste-buffer -t " . g:VimuxRunnerPaneIndex)
+
+  " restore current tmux buffer
+  call s:VimuxSetBuffer(oldbuffer)
+endfunction
+
+function! s:VimuxSetBuffer(text)
+  " FIXME for some reason, the 'tmux load-buffer -' form will hang
+  " when used with 'system()' which takes a second argument as stdin.
+  let tmpfile = tempname()
+  call writefile(split(a:text, '\n'), tmpfile, 'b')
+  call system('tmux load-buffer ' . shellescape(tmpfile))
+  call delete(tmpfile)
 endfunction
 
 function! VimuxSendKeys(keys)
@@ -121,9 +138,9 @@ endfunction
 function! _VimuxNearestPaneIndex()
   let panes = split(system("tmux list-panes"), "\n")
 
-  for i in panes
-    if match(panes[i], "(active)") == -1
-      return split(panes[i], ":")[0]
+  for pane in panes
+    if pane !~ '\(active\)'
+      return split(pane, ":")[0]
     endif
   endfor
 
